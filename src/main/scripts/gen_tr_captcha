@@ -1,0 +1,51 @@
+#!/usr/bin/env python3
+
+from random import randint
+from PIL import Image
+from booking.captchaTool import Rect, CaptchaText
+
+import os
+import booking
+import docopt
+
+
+def main(options):
+    char_type = options['--type']
+
+    answer = ""
+    background_colors = [randint(180, 250) for _ in range(3)]
+    font_dir = os.path.join(os.path.dirname(booking.__file__), 'fonts', '')
+    fonts = [os.path.join(font_dir, 'times-bold.ttf'), os.path.join(font_dir, 'times-bold.ttf')]
+    captcha_image = Image.new('RGBA', (200, 60), (background_colors[0], background_colors[1], background_colors[2], 255))
+    rects = [Rect() for _ in range(32)]
+
+    for obj in rects:
+        obj.draw(image=captcha_image, overlay=False)
+
+    offset = 0
+    for i in range(6):
+        new_text = CaptchaText(i, offset)
+        new_text.set_fonts(fonts)
+        if char_type:
+            new_text.set_char_type(char_type)
+        new_text.draw(image=captcha_image)
+        offset = new_text.next_offset
+        answer += str(new_text.char)
+
+    for obj in rects:
+        obj.draw(image=captcha_image, overlay=True)
+
+    captcha_image.convert("RGB").save(answer + ".jpg", "JPEG")
+
+
+if __name__ == '__main__':
+    option_doc = '''
+Usage:
+    gen_tr_captcha [-t <type>]
+      
+Options:
+    -h, --help                      help
+    -t, --type <type>               type, ie num, upper, lower
+'''
+    options = docopt.docopt(option_doc, version='0.1')
+    main(options)
