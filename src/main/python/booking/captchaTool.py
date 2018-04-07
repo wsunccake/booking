@@ -1,4 +1,7 @@
 import string
+import speech_recognition
+import cv2
+
 from random import randint, choices
 from PIL import Image, ImageDraw, ImageFont
 
@@ -89,24 +92,106 @@ class CaptchaText:
         self.char = ''.join(choices(ch, k=1))
 
 
+class CaptchaAudio(object):
+    def __init__(self, audio_file):
+        self.audio = audio_file
+
+    def convert_to_text(self):
+        r = speech_recognition.Recognizer()
+        with speech_recognition.AudioFile(self.audio) as source:
+            r.adjust_for_ambient_noise(source, duration=1)
+            audio = r.record(source)
+
+        text = r.recognize_google(audio, language='zh-tw')
+        return text
+
+
+class CaptchaImage(object):
+    def __init__(self, file, flag=cv2.IMREAD_COLOR):
+        self.image = cv2.imread(file, flag)
+        print(self.image.shape)
+
+    def threshold(self):
+        retval, self.image = cv2.threshold(self.image, 115, 255, cv2.THRESH_BINARY_INV)
+
+    def blurred(self):
+        self.image = cv2.GaussianBlur(self.image, (3, 3), 0)
+
+    def morphology(self):
+        # kernel = np.ones((2, 2), np.uint8)
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+        self.image = cv2.morphologyEx(self.image, cv2.MORPH_CLOSE, kernel)
+
+    def gray(self):
+        self.image = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
+
+    def denoise_by_threshold(self):
+        for col in range(3):
+            count = 0
+            for i in range(len(self.image)):
+                for j in range(len(self.image[i])):
+                    if self.image[i, j, col] == 255:
+                        count = 0
+                        for k in range(-2, 3):
+                            # print(k)
+                            for l in range(-2, 3):
+                                try:
+                                    if self.image[i + k, j + l, col] == 255:
+                                        count += 1
+                                except IndexError:
+                                    pass
+                                # 這裡 threshold 設 4，當周遭小於 4 個點的話視為雜點
+                    if count <= 4:
+                        self.image[i, j, col] = 0
+
+    def edge(self):
+        self.image = cv2.Canny(self.image, 30, 150)
+
+    def show(self, title=''):
+        cv2.imshow(title, self.image)
+
+    @staticmethod
+    def destroy():
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+    @staticmethod
+    def split_axis(image, axis):
+        splits = []
+        if axis == 'x':
+            for i in range(image.shape[1]):
+                if sum(image[:, i, 0]) != 0:
+                    splits.append(i)
+
+        elif axis == 'y':
+            for i in range(image.shape[0]):
+                if sum(image[i, :, 0]) != 0:
+                    splits.append(i)
+
+        return splits
+
+    def divide_char(self):
+        x_splits = self.split_axis(self.image, 'x')
+
+        divide_x = []
+        tmp_x = [x_splits[0]]
+        for i in range(1, len(x_splits)):
+            if x_splits[i] - x_splits[i-1] > 3:
+                divide_x.append(tmp_x)
+                tmp_x = [x_splits[i]]
+            else:
+                tmp_x.append(x_splits[i])
+        divide_x.append(tmp_x)
+
+        divide_images = []
+        for x in divide_x:
+            tmp_image = self.image[:, min(x):max(x), :]
+            y = self.split_axis(tmp_image, 'y')
+            char_image = tmp_image[min(y):max(y), :, :]
+            divide_images.append(char_image)
+
+        return divide_images
+
+
 if __name__ == '__main__':
-    answer = ""
-    random_chars = []
-    background_colors = [randint(180, 250) for _ in range(3)]
-    captcha_image = Image.new('RGBA', (200, 60), (background_colors[0], background_colors[1], background_colors[2], 255))
-    rects = [Rect() for _ in range(32)]
-
-    for obj in rects:
-        obj.draw(image=captcha_image, overlay=False)
-
-    offset = 0
-    for i in range(6):
-        new_text = CaptchaText(i, offset)
-        new_text.draw(image=captcha_image)
-        offset = new_text.next_offset
-        answer += str(new_text.char)
-
-    for obj in rects:
-        obj.draw(image=captcha_image, overlay=True)
-
-    captcha_image.convert("RGB").save(answer + ".jpg", "JPEG")
+    pass

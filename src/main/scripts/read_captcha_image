@@ -1,0 +1,37 @@
+#!/usr/bin/env python3
+
+import cv2
+
+from booking.captchaTool import CaptchaImage
+
+import docopt
+
+
+def main(options):
+    input_image = options['--input']
+
+    captcha_image = CaptchaImage (input_image)
+
+    captcha_image = CaptchaImage(input_image)
+    captcha_image.threshold()
+    captcha_image.denoise_by_threshold()
+    captcha_image.morphology()
+    # captcha_image.show('img')
+
+    for index, image in enumerate(captcha_image.divide_char()):
+        image = cv2.resize(image, (50, 50))
+        # cv2.imshow('{}'.format(index), image)
+        cv2.imwrite('{}.png'.format(index), image)
+
+
+if __name__ == '__main__':
+    option_doc = '''
+Usage:
+    read_captcha_audio -i <input>
+
+Options:
+    -h, --help                      help
+    -i, --input <input>             input, ie xxx.jpg
+'''
+    options = docopt.docopt(option_doc, version='0.1')
+    main(options)

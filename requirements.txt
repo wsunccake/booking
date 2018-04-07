@@ -1,2 +1,5 @@
-PIL
+Pillow
 docopt
+numpy
+opencv-python
+SpeechRecognition

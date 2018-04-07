@@ -41,7 +41,7 @@ def main(options):
 if __name__ == '__main__':
     option_doc = '''
 Usage:
-    gen_tr_captcha [-t <type>]
+    gen_captcha [-t <type>]
       
 Options:
     -h, --help                      help

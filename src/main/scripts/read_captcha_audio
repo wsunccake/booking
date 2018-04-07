@@ -1,0 +1,25 @@
+#!/usr/bin/env python3
+
+from booking.captchaTool import CaptchaAudio
+
+import docopt
+
+
+def main(options):
+    input_audio = options['--input']
+
+    captcha_audio = CaptchaAudio(input_audio)
+    print(captcha_audio.convert_to_text())
+
+
+if __name__ == '__main__':
+    option_doc = '''
+Usage:
+    read_captcha_audio -i <input>
+
+Options:
+    -h, --help                      help
+    -i, --input <input>             input, ie xxx.wav
+'''
+    options = docopt.docopt(option_doc, version='0.1')
+    main(options)
